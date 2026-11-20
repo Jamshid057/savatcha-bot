@@ -1,62 +1,65 @@
 # Savatcha
 
-Telegram do'kon, ikki ko'rinishda — **bitta yadro, bitta ma'lumotlar bazasi**:
+A Telegram store in two flavours, built on **one shared core and one database**:
 
 | | **v1 — Classic bot** | **v2 — Mini App** |
 |---|---|---|
-| Tajriba | Chat ichida: tugmalar, savat, buyurtma | Mobil ilovaga o'xshash (React) |
-| Admin | Botning ichida (`/admin`) | Mini App ichida + brauzerda (v2.1) |
-| Narx (mijozga) | Arzonroq, tezroq | Biroz qimmatroq, premium |
-| Mos mijoz | Kichik do'kon, oddiy katalog | Ko'p mahsulot, brend tajribasi |
-| Holat | ✅ tayyor | ✅ tayyor (+ veb admin v2.1) |
+| Experience | In-chat: buttons, cart, checkout | Mobile-app-like (React) |
+| Admin | Inside the bot (`/admin`) | Inside the Mini App + in the browser (v2.1) |
+| Pricing tier (for clients) | Cheaper, faster to deliver | Somewhat pricier, premium |
+| Best for | Small shops, simple catalogs | Large catalogs, branded experience |
+| Status | ✅ ready | ✅ ready (+ web admin v2.1) |
 
-Ikkala versiya bir xil biznes-mantiqdan (`src/savatcha/core/services`) foydalanadi.
-To'liq texnik topshiriq: [`TZ-telegram-shop-bot.md`](TZ-telegram-shop-bot.md).
+Both versions share the same business logic (`src/savatcha/core/services`).
+The full technical specification is in [`TZ-telegram-shop-bot.md`](TZ-telegram-shop-bot.md) (written in Uzbek).
 
-## v1 imkoniyatlari
+## v1 features
 
-**Mijoz:** til (uz/ru), katalog (kategoriya, sahifalash, qidiruv), mahsulot kartasi (rasm, miqdor),
-savat (DB da saqlanadi), buyurtma (ism → telefon → manzil → izoh → chek rasmi → tasdiq),
-buyurtmalarim va holat o'zgarsa avtomatik xabar.
+**Customer:** language (uz/ru), catalog (categories, pagination, search), product card (photo, quantity),
+cart (stored in the DB), checkout (name → phone → address → comment → receipt photo → confirm),
+order history, and automatic notifications when an order status changes.
 
-**Admin (`/admin`, faqat `ADMIN_IDS`):** mahsulot va kategoriya CRUD (rasm bilan), arxivlash,
-mavjud/tugagan, buyurtmalar (filtr, tafsilot, chek, holat tarixi, holat o'zgartirish → mijozga xabar),
-`/stats` (bugun va 7 kun, Toshkent vaqti bilan).
+**Admin (`/admin`, `ADMIN_IDS` only):** product and category CRUD (with photos), archiving,
+in stock / out of stock, orders (filters, details, receipt, status history, status change → customer notification),
+`/stats` (today and last 7 days, Tashkent time).
 
-## v2 va v2.1 imkoniyatlari
+## v2 and v2.1 features
 
-**Mini App (React + FastAPI):** Telegram `initData` HMAC bilan tekshiriladi, narx/summa faqat serverda hisoblanadi.
-Tab bar, BackButton/MainButton, haptic, Telegram temasi, skeleton, optimistik savat, chek yuklash,
-buyurtmalar va holat tarixi, uz/ru. Admin: mahsulot (rasm), kategoriya, buyurtma boshqaruvi.
+**Mini App (React + FastAPI):** Telegram `initData` is verified with HMAC; prices and totals are computed
+on the server only. Tab bar, BackButton/MainButton, haptic feedback, Telegram theme, skeleton loading,
+optimistic cart, receipt upload, orders with status history, uz/ru. Admin API: products (with photos),
+categories, order management.
 
-**Veb admin (`/admin`, brauzerda):** Telegram Login Widget orqali kirish (parol yo'q), `HttpOnly + Secure +
-SameSite=Strict` cookie, CSRF (Origin tekshiruvi), login rate limit, audit log, faol sessiyalar.
-Dashboard (KPI + oldingi davr bilan taqqoslash, 6 ta grafik), hisobotlar (top/sust mahsulotlar, top mijozlar),
-buyurtmalar jadvali (server filtr/saralash, ommaviy holat, CSV, chop etish), mahsulotlar (inline narx/mavjudlik),
-kategoriyalar (sudrab tartiblash), mijozlar, sozlamalar. Yangi buyurtma 30 soniyada toast bilan chiqadi.
+**Web admin (`/admin`, in the browser):** sign-in via Telegram Login Widget (no passwords), `HttpOnly + Secure +
+SameSite=Strict` session cookie, CSRF protection (Origin check), login rate limiting, audit log, active sessions.
+Dashboard (KPIs with comparison to the previous period, 6 charts), reports (top / slow-moving products,
+top customers), orders table (server-side filtering/sorting, bulk status change, CSV export, printing),
+products (inline price/availability editing), categories (drag-and-drop ordering), customers, settings.
+New orders appear as a toast within 30 seconds.
 
-## Ishga tushirish
+## Getting started
 
 ```bash
-cp .env.example .env     # BOT_TOKEN_CLASSIC, ADMIN_IDS, POSTGRES_PASSWORD ni to'ldiring
-                         # DATABASE_URL dagi parol POSTGRES_PASSWORD bilan bir xil bo'lsin
+cp .env.example .env     # fill in BOT_TOKEN_CLASSIC, ADMIN_IDS, POSTGRES_PASSWORD
+                         # the password in DATABASE_URL must match POSTGRES_PASSWORD
 docker compose --profile classic up -d --build
-docker compose --profile classic run --rm bot python -m savatcha.core.seed   # demo ma'lumot (ixtiyoriy)
+docker compose --profile classic run --rm bot python -m savatcha.core.seed   # demo data (optional)
 ```
 
-**v2 (Mini App) va veb admin** (HTTPS uchun domen kerak, `.env` da `SITE_ADDRESS`, `WEBAPP_URL`,
-`BOT_TOKEN_APP`, `VITE_BOT_USERNAME`; BotFather da Mini App URL va `/setdomain`):
+**v2 (Mini App) and the web admin** need a domain for HTTPS. Set `SITE_ADDRESS`, `WEBAPP_URL`,
+`BOT_TOKEN_APP` and `VITE_BOT_USERNAME` in `.env`, then configure the Mini App URL and `/setdomain` in BotFather:
 
 ```bash
 docker compose --profile miniapp up -d --build
-# ikkalasi birga (bitta umumiy DB): --profile classic --profile miniapp
+# both versions together (one shared DB): --profile classic --profile miniapp
 ```
 
-Telegram Login Widget faqat `/setdomain` qilingan HTTPS domenda ishlaydi (lokalda Cloudflare Tunnel/ngrok).
-Migratsiyalar (`alembic upgrade head`) alohida `migrate` servisida bot/api dan oldin bajariladi.
-Yangilash: `git pull && docker compose --profile classic up -d --build`.
+The Telegram Login Widget only works on an HTTPS domain registered with `/setdomain`
+(locally, use Cloudflare Tunnel or ngrok).
+Database migrations (`alembic upgrade head`) run in a dedicated `migrate` service before the bot and API start.
+Updating: `git pull && docker compose --profile classic up -d --build`.
 
-### Lokal ishlab chiqish
+### Local development
 
 ```bash
 uv sync
@@ -67,31 +70,32 @@ uv run ruff check . && uv run ruff format --check . && uv run pytest
 cd webapp && npm ci && npm run lint && npm test && npm run build
 ```
 
-Testlar SQLite da ishlaydi; Telegram'ga ulanish shart emas (bot oqimi soxta sessiya bilan sinaladi).
-Postgres da ham ishga tushirish: `TEST_DATABASE_URL=postgresql+asyncpg://... uv run pytest`.
+Tests run on SQLite and do not need a connection to Telegram (the bot flow is exercised with a fake session).
+To run them against Postgres as well: `TEST_DATABASE_URL=postgresql+asyncpg://... uv run pytest`.
 
-## Arxitektura
+## Architecture
 
 ```
 src/savatcha/
-├── core/            # umumiy yadro
-│   ├── config.py    # .env sozlamalari
-│   ├── db/          # SQLAlchemy 2 (async) modellari
-│   ├── repo/        # foydalanuvchi so'rovlari
-│   ├── services/    # catalog, cart, orders, files, notify, stats, formatting  <- biznes-mantiq
-│   ├── utils/       # telefon, narx, matn
+├── core/            # shared core
+│   ├── config.py    # .env settings
+│   ├── db/          # SQLAlchemy 2 (async) models
+│   ├── repo/        # user queries
+│   ├── services/    # catalog, cart, orders, files, notify, stats, formatting  <- business logic
+│   ├── utils/       # phone, price, text helpers
 │   └── locales/     # uz.json, ru.json
-├── bot/             # v1: aiogram 3 (handlerlar faqat servislarni chaqiradi)
+├── bot/             # v1: aiogram 3 (handlers only call services)
 └── api/             # v2: FastAPI (auth, routers, admin/*) + gateway_bot.py
-webapp/              # React + Vite + TS + Tailwind (Mini App va /admin)
-deploy/Caddyfile     # HTTPS, xavfsizlik headerlari
-migrations/          # Alembic (bitta, umumiy)
+webapp/              # React + Vite + TS + Tailwind (Mini App and /admin)
+deploy/Caddyfile     # HTTPS and security headers
+migrations/          # Alembic (single, shared)
 ```
 
-Qoidalar: pul `Decimal`; buyurtmada nom va narx nusxalanadi (snapshot); matnlar faqat `locales/*.json`;
-rasmlar diskda (`UPLOAD_DIR/products` ochiq, `UPLOAD_DIR/receipts` yopiq), DB da faqat yo'l;
-admin huquqi faqat `ADMIN_IDS` orqali.
+Conventions: money is `Decimal`; an order stores a snapshot of each product's name and price;
+all user-facing text lives in `locales/*.json`; images are stored on disk
+(`UPLOAD_DIR/products` is public, `UPLOAD_DIR/receipts` is private) with only the path kept in the DB;
+admin rights are determined solely by `ADMIN_IDS`.
 
-## Skrinshotlar
+## Screenshots
 
-> Demo bot (`@savatcha_classic_bot`), skrinshotlar va video joylanadi (A10, qo'lda).
+> The demo bot (`@savatcha_classic_bot`), screenshots and a video will be added here.
