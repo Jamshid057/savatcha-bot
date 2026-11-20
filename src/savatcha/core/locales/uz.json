@@ -143,5 +143,8 @@
   "status_changed": "Holat o'zgartirildi.",
   "status_not_allowed": "Bu holatga o'tib bo'lmaydi.",
   "receipt_missing": "Chek topilmadi.",
-  "receipt_caption": "Buyurtma #{id} cheki"
+  "receipt_caption": "Buyurtma #{id} cheki",
+  "gateway_welcome": "Assalomu alaykum, {name}! 👋\nSavatcha do'koniga xush kelibsiz. Do'konni ochish uchun tugmani bosing.",
+  "gateway_open": "🛍 Do'konni ochish",
+  "gateway_help": "Do'konni ochish uchun «🛍 Do'konni ochish» tugmasini bosing. Katalog, savat va buyurtmalar ilova ichida."
 }

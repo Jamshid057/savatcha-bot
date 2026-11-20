@@ -1,0 +1,75 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --c-bg: #ffffff;
+  --c-surface: #f3f4f6;
+  --c-text: #111827;
+  --c-hint: #6b7280;
+  --c-link: #2563eb;
+  --c-accent: #2563eb;
+  --c-accent-text: #ffffff;
+  --c-line: #e5e7eb;
+  --c-danger: #dc2626;
+  --c-ok: #16a34a;
+}
+:root.dark {
+  --c-bg: #111827;
+  --c-surface: #1f2937;
+  --c-text: #f9fafb;
+  --c-hint: #9ca3af;
+  --c-link: #60a5fa;
+  --c-accent: #3b82f6;
+  --c-accent-text: #ffffff;
+  --c-line: #374151;
+  --c-danger: #f87171;
+  --c-ok: #4ade80;
+}
+
+html,
+body,
+#root {
+  min-height: 100%;
+}
+body {
+  margin: 0;
+  background: var(--c-bg);
+  color: var(--c-text);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  -webkit-tap-highlight-color: transparent;
+}
+
+@layer components {
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 rounded-xl bg-accent px-4 py-3 text-sm font-semibold text-accent-text transition active:scale-95 disabled:opacity-50;
+  }
+  .btn-secondary {
+    @apply inline-flex items-center justify-center gap-2 rounded-xl bg-surface px-4 py-3 text-sm font-semibold text-text transition active:scale-95 disabled:opacity-50;
+  }
+  .input {
+    @apply w-full rounded-xl border border-line bg-surface px-3 py-3 text-sm text-text outline-none focus:border-accent;
+  }
+  .card {
+    @apply rounded-2xl bg-surface p-3;
+  }
+}
+
+@media print {
+  body * {
+    visibility: hidden;
+  }
+  #print-area,
+  #print-area * {
+    visibility: visible;
+  }
+  #print-area {
+    position: absolute;
+    inset: 0;
+    background: #fff;
+    color: #000;
+  }
+  .no-print {
+    display: none !important;
+  }
+}

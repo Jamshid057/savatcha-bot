@@ -1,0 +1,29 @@
+# SITE_ADDRESS: domen (avtomatik HTTPS) yoki `:80` (lokal sinov, HTTPS siz)
+{$SITE_ADDRESS::80} {
+	encode zstd gzip
+
+	header {
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+		X-Content-Type-Options "nosniff"
+		Referrer-Policy "strict-origin-when-cross-origin"
+		# Telegram Web Mini App ni iframe da ochadi, shuning uchun X-Frame-Options (DENY/SAMEORIGIN)
+		# ishlatilmaydi: frame-ancestors faqat o'zimiz va Telegram'ga ruxsat beradi.
+		Content-Security-Policy "default-src 'self'; script-src 'self' https://telegram.org; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; connect-src 'self'; frame-src https://oauth.telegram.org; frame-ancestors 'self' https://web.telegram.org https://*.telegram.org; base-uri 'self'; form-action 'self'; object-src 'none'"
+		-Server
+	}
+
+	# API va mahsulot rasmlari FastAPI dan. Cheklar (receipts/) hech qachon /files orqali berilmaydi.
+	handle /api/* {
+		reverse_proxy api:8000
+	}
+	handle /files/* {
+		reverse_proxy api:8000
+	}
+
+	# Frontend (SPA): mavjud bo'lmagan yo'llar index.html ga
+	handle {
+		root * /srv
+		try_files {path} /index.html
+		file_server
+	}
+}

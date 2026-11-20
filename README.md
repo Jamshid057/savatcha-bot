@@ -8,7 +8,7 @@ Telegram do'kon, ikki ko'rinishda — **bitta yadro, bitta ma'lumotlar bazasi**:
 | Admin | Botning ichida (`/admin`) | Mini App ichida + brauzerda (v2.1) |
 | Narx (mijozga) | Arzonroq, tezroq | Biroz qimmatroq, premium |
 | Mos mijoz | Kichik do'kon, oddiy katalog | Ko'p mahsulot, brend tajribasi |
-| Holat | ✅ tayyor | rejada |
+| Holat | ✅ tayyor | ✅ tayyor |
 
 Ikkala versiya bir xil biznes-mantiqdan (`src/savatcha/core/services`) foydalanadi.
 To'liq texnik topshiriq: [`TZ-telegram-shop-bot.md`](TZ-telegram-shop-bot.md).
@@ -23,6 +23,12 @@ buyurtmalarim va holat o'zgarsa avtomatik xabar.
 mavjud/tugagan, buyurtmalar (filtr, tafsilot, chek, holat tarixi, holat o'zgartirish → mijozga xabar),
 `/stats` (bugun va 7 kun, Toshkent vaqti bilan).
 
+## v2 imkoniyatlari
+
+**Mini App (React + FastAPI):** Telegram `initData` HMAC bilan tekshiriladi, narx/summa faqat serverda hisoblanadi.
+Tab bar, BackButton/MainButton, haptic, Telegram temasi, skeleton, optimistik savat, chek yuklash,
+buyurtmalar va holat tarixi, uz/ru. Admin API: mahsulot (rasm), kategoriya, buyurtma boshqaruvi.
+
 ## Ishga tushirish
 
 ```bash
@@ -32,11 +38,27 @@ docker compose --profile classic up -d --build
 docker compose --profile classic run --rm bot python -m savatcha.core.seed   # demo ma'lumot (ixtiyoriy)
 ```
 
+**v2 (Mini App)** (HTTPS uchun domen kerak, `.env` da `SITE_ADDRESS`, `WEBAPP_URL`,
+`BOT_TOKEN_APP`; BotFather da Mini App URL va `/setdomain`):
+
+```bash
+docker compose --profile miniapp up -d --build
+# ikkalasi birga (bitta umumiy DB): --profile classic --profile miniapp
+```
+
+Mini App faqat HTTPS da ochiladi (lokalda Cloudflare Tunnel/ngrok).
+Migratsiyalar (`alembic upgrade head`) alohida `migrate` servisida bot/api dan oldin bajariladi.
+Yangilash: `git pull && docker compose --profile classic up -d --build`.
+
 ### Lokal ishlab chiqish
 
 ```bash
 uv sync
 uv run ruff check . && uv run ruff format --check . && uv run pytest
+```
+
+```bash
+cd webapp && npm ci && npm run lint && npm test && npm run build
 ```
 
 Testlar SQLite da ishlaydi; Telegram'ga ulanish shart emas (bot oqimi soxta sessiya bilan sinaladi).
@@ -53,7 +75,10 @@ src/savatcha/
 │   ├── services/    # catalog, cart, orders, files, notify, stats, formatting  <- biznes-mantiq
 │   ├── utils/       # telefon, narx, matn
 │   └── locales/     # uz.json, ru.json
-└── bot/             # v1: aiogram 3 (handlerlar faqat servislarni chaqiradi)
+├── bot/             # v1: aiogram 3 (handlerlar faqat servislarni chaqiradi)
+└── api/             # v2: FastAPI (auth, routers, admin/*) + gateway_bot.py
+webapp/              # React + Vite + TS + Tailwind (Mini App va /admin)
+deploy/Caddyfile     # HTTPS, xavfsizlik headerlari
 migrations/          # Alembic (bitta, umumiy)
 ```
 

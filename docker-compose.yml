@@ -1,4 +1,5 @@
-# v1 (classic bot): bitta DB + bot. Profil: `classic`.
+# Bitta DB, ikki profil: `classic` (v1 bot) va `miniapp` (v2: api + gateway bot + web).
+# Ikkalasini birga ham ishga tushirish mumkin: docker compose --profile classic --profile miniapp up -d --build
 x-app: &app
   build: .
   env_file: .env
@@ -21,9 +22,10 @@ services:
       retries: 10
     restart: unless-stopped
 
+  # Migratsiya bir marta, bot/api dan oldin (parallel ishga tushishda poyga bo'lmasligi uchun)
   migrate:
     <<: *app
-    profiles: ["classic"]
+    profiles: ["classic", "miniapp"]
     command: alembic upgrade head
     restart: "no"
     depends_on:
@@ -38,6 +40,43 @@ services:
       migrate:
         condition: service_completed_successfully
 
+  api:
+    <<: *app
+    profiles: ["miniapp"]
+    command: >
+      uvicorn savatcha.api.main:app_factory --factory --host 0.0.0.0 --port 8000
+      --proxy-headers --forwarded-allow-ips "*"
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+
+  gateway:
+    <<: *app
+    profiles: ["miniapp"]
+    command: python -m savatcha.api.gateway_bot
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+
+  web:
+    profiles: ["miniapp"]
+    build:
+      context: .
+      dockerfile: Dockerfile.web
+      args:
+        VITE_BOT_USERNAME: ${VITE_BOT_USERNAME:-}
+    environment:
+      SITE_ADDRESS: ${SITE_ADDRESS:-:80}
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - caddy_data:/data
+    depends_on:
+      - api
+    restart: unless-stopped
+
 volumes:
   pgdata:
   uploads:
+  caddy_data:
