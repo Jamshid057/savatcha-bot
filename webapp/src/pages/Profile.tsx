@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 import { errorText, useMe, usePatchMe } from "../api/hooks";
 import { ErrorState, Skeleton } from "../components/ui";
 import { useT } from "../i18n";
@@ -56,6 +57,11 @@ export default function Profile() {
           {t("save")}
         </button>
       </div>
+      {user.is_admin && (
+        <Link to="/admin" className="btn-secondary w-full">
+          ⚙️ {t("admin")}
+        </Link>
+      )}
     </div>
   );
 }

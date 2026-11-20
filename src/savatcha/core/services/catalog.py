@@ -169,3 +169,13 @@ async def archive_product(session: AsyncSession, product: Product) -> None:
     product.is_archived = True
     product.is_available = False
     await session.commit()
+
+
+async def reorder_categories(session: AsyncSession, ids: list[int]) -> None:
+    """Berilgan tartib bo'yicha sort_order ni qayta yozadi (sudrab tartiblash)."""
+    cats = {c.id: c for c in await list_categories(session, only_active=False)}
+    if set(ids) != set(cats):
+        raise CatalogError("ids must list every category exactly once")
+    for position, cat_id in enumerate(ids):
+        cats[cat_id].sort_order = position
+    await session.commit()

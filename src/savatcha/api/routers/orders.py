@@ -10,6 +10,7 @@ from savatcha.core.config import Settings
 from savatcha.core.db.models import User
 from savatcha.core.repo import users
 from savatcha.core.services import orders as order_service
+from savatcha.core.services import shop_settings
 from savatcha.core.services.files import RECEIPTS_SUBDIR
 from savatcha.core.services.notify import notify_admins_new_order
 
@@ -53,7 +54,8 @@ async def create_order(
     await users.set_phone(session, user, order.phone)
     full = await order_service.get_order(session, order.id)
     assert full is not None
-    await notify_admins_new_order(bots, settings.admin_ids, full)
+    recipients = await shop_settings.notification_recipients(session, settings)
+    await notify_admins_new_order(bots, recipients, full)
     return order_out(full)
 
 

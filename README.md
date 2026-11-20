@@ -8,7 +8,7 @@ Telegram do'kon, ikki ko'rinishda — **bitta yadro, bitta ma'lumotlar bazasi**:
 | Admin | Botning ichida (`/admin`) | Mini App ichida + brauzerda (v2.1) |
 | Narx (mijozga) | Arzonroq, tezroq | Biroz qimmatroq, premium |
 | Mos mijoz | Kichik do'kon, oddiy katalog | Ko'p mahsulot, brend tajribasi |
-| Holat | ✅ tayyor | ✅ tayyor |
+| Holat | ✅ tayyor | ✅ tayyor (+ veb admin v2.1) |
 
 Ikkala versiya bir xil biznes-mantiqdan (`src/savatcha/core/services`) foydalanadi.
 To'liq texnik topshiriq: [`TZ-telegram-shop-bot.md`](TZ-telegram-shop-bot.md).
@@ -23,11 +23,17 @@ buyurtmalarim va holat o'zgarsa avtomatik xabar.
 mavjud/tugagan, buyurtmalar (filtr, tafsilot, chek, holat tarixi, holat o'zgartirish → mijozga xabar),
 `/stats` (bugun va 7 kun, Toshkent vaqti bilan).
 
-## v2 imkoniyatlari
+## v2 va v2.1 imkoniyatlari
 
 **Mini App (React + FastAPI):** Telegram `initData` HMAC bilan tekshiriladi, narx/summa faqat serverda hisoblanadi.
 Tab bar, BackButton/MainButton, haptic, Telegram temasi, skeleton, optimistik savat, chek yuklash,
-buyurtmalar va holat tarixi, uz/ru. Admin API: mahsulot (rasm), kategoriya, buyurtma boshqaruvi.
+buyurtmalar va holat tarixi, uz/ru. Admin: mahsulot (rasm), kategoriya, buyurtma boshqaruvi.
+
+**Veb admin (`/admin`, brauzerda):** Telegram Login Widget orqali kirish (parol yo'q), `HttpOnly + Secure +
+SameSite=Strict` cookie, CSRF (Origin tekshiruvi), login rate limit, audit log, faol sessiyalar.
+Dashboard (KPI + oldingi davr bilan taqqoslash, 6 ta grafik), hisobotlar (top/sust mahsulotlar, top mijozlar),
+buyurtmalar jadvali (server filtr/saralash, ommaviy holat, CSV, chop etish), mahsulotlar (inline narx/mavjudlik),
+kategoriyalar (sudrab tartiblash), mijozlar, sozlamalar. Yangi buyurtma 30 soniyada toast bilan chiqadi.
 
 ## Ishga tushirish
 
@@ -38,15 +44,15 @@ docker compose --profile classic up -d --build
 docker compose --profile classic run --rm bot python -m savatcha.core.seed   # demo ma'lumot (ixtiyoriy)
 ```
 
-**v2 (Mini App)** (HTTPS uchun domen kerak, `.env` da `SITE_ADDRESS`, `WEBAPP_URL`,
-`BOT_TOKEN_APP`; BotFather da Mini App URL va `/setdomain`):
+**v2 (Mini App) va veb admin** (HTTPS uchun domen kerak, `.env` da `SITE_ADDRESS`, `WEBAPP_URL`,
+`BOT_TOKEN_APP`, `VITE_BOT_USERNAME`; BotFather da Mini App URL va `/setdomain`):
 
 ```bash
 docker compose --profile miniapp up -d --build
 # ikkalasi birga (bitta umumiy DB): --profile classic --profile miniapp
 ```
 
-Mini App faqat HTTPS da ochiladi (lokalda Cloudflare Tunnel/ngrok).
+Telegram Login Widget faqat `/setdomain` qilingan HTTPS domenda ishlaydi (lokalda Cloudflare Tunnel/ngrok).
 Migratsiyalar (`alembic upgrade head`) alohida `migrate` servisida bot/api dan oldin bajariladi.
 Yangilash: `git pull && docker compose --profile classic up -d --build`.
 

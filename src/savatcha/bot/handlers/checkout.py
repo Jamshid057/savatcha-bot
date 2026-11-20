@@ -24,6 +24,7 @@ from savatcha.core.i18n import t
 from savatcha.core.repo import users
 from savatcha.core.services import cart as cart_service
 from savatcha.core.services import orders as order_service
+from savatcha.core.services import shop_settings
 from savatcha.core.services.files import RECEIPTS_SUBDIR, ImageError, save_image
 from savatcha.core.services.notify import notify_admins_new_order
 from savatcha.core.utils.phone import normalize_phone
@@ -235,9 +236,8 @@ async def confirm_order(
     await message.answer(t("order_thanks", lang), reply_markup=main_menu(lang))
     full = await order_service.get_order(session, order.id)
     if full is not None:
-        await notify_admins_new_order(
-            bots, get_settings().admin_ids, full, reply_markup=new_order_kb(full.id)
-        )
+        recipients = await shop_settings.notification_recipients(session, get_settings())
+        await notify_admins_new_order(bots, recipients, full, reply_markup=new_order_kb(full.id))
 
 
 @router.callback_query(ConfirmCB.filter())

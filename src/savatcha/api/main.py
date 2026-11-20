@@ -12,7 +12,7 @@ from slowapi.errors import RateLimitExceeded
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from savatcha.api.limits import limiter
-from savatcha.api.routers import cart, catalog, me, orders
+from savatcha.api.routers import auth, cart, catalog, me, orders, shop
 from savatcha.api.routers.admin import router as admin_router
 from savatcha.core.config import get_settings
 from savatcha.core.db.base import make_engine, make_session_factory
@@ -76,7 +76,9 @@ def create_app(
     async def health() -> dict[str, str]:
         return {"status": "ok"}
 
+    app.include_router(auth.router, prefix="/api")
     app.include_router(me.router, prefix="/api")
+    app.include_router(shop.router, prefix="/api")
     app.include_router(catalog.router, prefix="/api")
     app.include_router(cart.router, prefix="/api")
     app.include_router(orders.router, prefix="/api")

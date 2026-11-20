@@ -4,14 +4,15 @@ from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, Upload
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from savatcha.api.deps import get_session, require_admin, settings_dep
-from savatcha.api.schemas import ProductOut, ProductPage, product_out
+from savatcha.api.schemas import BulkArchiveIn, ProductOut, ProductPage, product_out
 from savatcha.api.uploads import store_upload
 from savatcha.core.config import Settings
-from savatcha.core.services import catalog
+from savatcha.core.db.models import User
+from savatcha.core.services import audit, catalog
 from savatcha.core.services.files import PRODUCTS_SUBDIR
 from savatcha.core.utils.money import parse_price
 
-router = APIRouter(prefix="/products", dependencies=[Depends(require_admin)])
+router = APIRouter(prefix="/products")
 
 
 def _price(raw: str) -> Decimal:
@@ -39,6 +40,7 @@ async def list_products(
     q: str | None = Query(default=None, max_length=50),
     page: int = Query(default=1, ge=1),
     per_page: int = Query(default=20, ge=1, le=100),
+    _: User = Depends(require_admin),
     session: AsyncSession = Depends(get_session),
 ):
     items, total = await catalog.list_products(
@@ -62,6 +64,7 @@ async def create(
     price: str = Form(),
     is_available: bool = Form(default=True),
     image: UploadFile | None = File(default=None),
+    admin: User = Depends(require_admin),
     session: AsyncSession = Depends(get_session),
     settings: Settings = Depends(settings_dep),
 ):
@@ -82,6 +85,7 @@ async def create(
     )
     if not is_available:
         await catalog.toggle_available(session, p)
+    await audit.log_action(session, admin.tg_id, "create", "product", p.id, {"name": p.name_uz})
     return product_out(p)
 
 
@@ -96,6 +100,7 @@ async def update(
     price: str | None = Form(default=None),
     is_available: bool | None = Form(default=None),
     image: UploadFile | None = File(default=None),
+    admin: User = Depends(require_admin),
     session: AsyncSession = Depends(get_session),
     settings: Settings = Depends(settings_dep),
 ):
@@ -120,12 +125,35 @@ async def update(
         await catalog.update_product(session, p, **fields)
     if is_available is not None and is_available != p.is_available:
         await catalog.toggle_available(session, p)
+        fields["is_available"] = is_available
+    changed = {k: str(v) for k, v in fields.items() if k != "image_path"}
+    if "image_path" in fields:
+        changed["image"] = "updated"
+    await audit.log_action(session, admin.tg_id, "update", "product", p.id, changed)
     return product_out(p)
+
+
+@router.post("/bulk-archive")
+async def bulk_archive(
+    body: BulkArchiveIn,
+    admin: User = Depends(require_admin),
+    session: AsyncSession = Depends(get_session),
+):
+    archived: list[int] = []
+    for product_id in dict.fromkeys(body.ids):
+        product = await catalog.get_product(session, product_id)
+        if product is not None and not product.is_archived:
+            await catalog.archive_product(session, product)
+            archived.append(product_id)
+    await audit.log_action(session, admin.tg_id, "delete", "product", None, {"archived": archived})
+    return {"archived": archived}
 
 
 @router.delete("/{product_id}", status_code=204)
 async def archive(
     product_id: int,
+    admin: User = Depends(require_admin),
     session: AsyncSession = Depends(get_session),
 ):
     await catalog.archive_product(session, await _get(session, product_id))
+    await audit.log_action(session, admin.tg_id, "delete", "product", product_id)

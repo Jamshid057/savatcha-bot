@@ -192,3 +192,43 @@ class OrderPage(BaseModel):
 
 class StatusIn(BaseModel):
     status: str
+
+
+class ReorderIn(BaseModel):
+    ids: list[int]
+
+
+class BulkStatusIn(BaseModel):
+    ids: list[int] = Field(min_length=1, max_length=200)
+    status: str
+
+
+class BulkArchiveIn(BaseModel):
+    ids: list[int] = Field(min_length=1, max_length=200)
+
+
+class CustomerOut(BaseModel):
+    id: int
+    tg_id: int
+    full_name: str
+    username: str | None
+    phone: str | None
+    lang: str | None
+    created_at: datetime
+    orders_count: int
+    total_spent: Decimal
+    last_order_at: datetime | None
+
+
+class CustomerPage(BaseModel):
+    items: list[CustomerOut]
+    total: int
+    page: int
+    pages: int
+
+
+class SettingsPatch(BaseModel):
+    shop_name: str | None = Field(default=None, min_length=1, max_length=100)
+    shop_phone: str | None = Field(default=None, max_length=30)
+    work_hours: str | None = Field(default=None, max_length=100)
+    notify_admin_ids: list[int] | None = None
